@@ -1,0 +1,30 @@
+dbrp "telegraf"."autogen"
+
+// The interval on which to aggregate the disk usage
+var growth_interval = 1d
+
+// The number of `growth_interval`s to forecast into the future
+var forecast_count = 7
+
+// The amount of historical data to use for the fit
+var history = 90d
+
+// The critical threshold on used_percent
+var threshold = 90.0
+
+batch
+    |query('''
+    SELECT max(used_percent) as used_percent
+    FROM "telegraf"."autogen"."disk"
+''')
+        .period(history)
+        .every(growth_interval)
+        .align()
+        .groupBy(time(growth_interval), *)
+    |holtWinters('used_percent', forecast_count, 0, growth_interval)
+        .as('used_percent')
+    |max('used_percent')
+        .as('used_percent')
+    |alert()
+        // Trigger alert if the forecasted disk usage is greater than threshold
+        .crit(lambda: "used_percent" > threshold)

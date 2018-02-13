@@ -1,0 +1,31 @@
+dbrp "telegraf"."autogen"
+
+// Select previous hour mean usage_idle
+var previous = batch
+    |query('SELECT mean(usage_idle) as usage_idle FROM "telegraf"."autogen".cpu')
+        .period(5m)
+        .every(5m)
+        .groupBy(*)
+        .align()
+        // Query previous hours worth of data
+        .offset(1h)
+    // Align past data with current time
+    |shift(1h)
+
+// Select current hour mean usage_idle
+var current = batch
+    |query('SELECT mean(usage_idle) as usage_idle FROM "telegraf"."autogen".cpu')
+        .period(5m)
+        .every(5m)
+        .groupBy(*)
+        .align()
+
+// Join the values and compute a metric
+previous
+    |join(current)
+        .as('prev', 'curr')
+    |eval(lambda: abs("prev.usage_idle" - "curr.usage_idle") / "prev.usage_idle")
+        .as('change')
+    |alert()
+        .warn(lambda: "change" > 0.8)
+        .crit(lambda: "change" > 0.9)

@@ -1,0 +1,10 @@
+dbrp "telegraf"."autogen"
+
+// Downsample and cache usage_idle by compute mean on 5m intervals
+batch
+    |query('SELECT mean(usage_idle) as usage_idle FROM "telegraf"."autogen".cpu')
+        .period(5m)
+        .every(5m)
+        .groupBy(*)
+        .align()
+    |httpOut('mean_usage_idle')

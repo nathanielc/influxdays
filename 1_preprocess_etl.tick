@@ -1,0 +1,9 @@
+dbrp "telegraf"."autogen"
+
+// Preprocess data to remove any disk paths from /dev/mapper as these are redundant
+stream
+    |from()
+        .measurement('disk')
+        .where(lambda: !strHasPrefix("path", '/dev/mapper'))
+    |influxDBOut()
+        .database('telegraf_clean')

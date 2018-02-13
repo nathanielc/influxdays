@@ -1,2 +1,4 @@
-# influxdaysnyc
-TICKscripts for various Use Cases
+# InfluxDays NYC 2018
+
+TICKscripts for various Kapacitor use cases.
+See slides for visual diagrams of TICKscripts. 

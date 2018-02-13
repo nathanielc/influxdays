@@ -1,0 +1,28 @@
+dbrp "telegraf"."autogen"
+
+// Target 100 requests per second per host
+var target = 100.0
+
+// Autoscale deployment node based on target requests per second per node.
+stream
+    |from()
+        .measurement('requests')
+        .groupBy('host', 'deployment')
+        .truncate(1s)
+    // Compute requests per second per host
+    |derivative('value')
+        .as('requests_per_second')
+        .unit(1s)
+        .nonNegative()
+    // Compute total requests per second by deployment
+    |groupBy('deployment')
+    |sum('requests_per_second')
+        .as('total_requests')
+    // Scale the deployment based on target.
+    |k8sAutoscale()
+        // Get the name of the deployment from the 'deployment' tag.
+        .resourceNameTag('deployment')
+        .min(1)
+        .max(100)
+        // Set the desired number of replicas based on target.
+        .replicas(lambda: int(ceil("total_requests" / target)))

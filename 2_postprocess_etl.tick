@@ -1,0 +1,14 @@
+dbrp "telegraf"."autogen"
+
+// Downsample usage_idle by compute mean on 5m intervals
+batch
+    |query('SELECT mean(usage_idle) as usage_idle FROM "telegraf"."autogen".cpu')
+        .period(5m)
+        .every(5m)
+        .groupBy(*)
+        .align()
+    |influxDBOut()
+        .database('telegraf')
+        .retentionPolicy('autogen')
+        .measurement('mean_cpu_idle')
+        .precision('s')
