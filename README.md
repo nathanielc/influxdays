@@ -1,4 +1,4 @@
-# InfluxDays NYC 2018
+# InfluxDays
 
 TICKscripts for various Kapacitor use cases.
 See slides for visual diagrams of TICKscripts. 
